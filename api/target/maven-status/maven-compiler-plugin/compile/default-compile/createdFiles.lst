@@ -1,0 +1,6 @@
+org/openmrs/module/ssemretl/SSEMRETLActivator.class
+org/openmrs/module/ssemretl/Item.class
+org/openmrs/module/ssemretl/api/impl/SSEMRETLServiceImpl.class
+org/openmrs/module/ssemretl/api/dao/SSEMRETLDao.class
+org/openmrs/module/ssemretl/SSEMRETLConfig.class
+org/openmrs/module/ssemretl/api/SSEMRETLService.class

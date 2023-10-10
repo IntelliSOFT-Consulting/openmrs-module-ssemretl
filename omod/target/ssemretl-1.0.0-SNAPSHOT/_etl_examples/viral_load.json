@@ -1,0 +1,33 @@
+{
+  "report_name": "Viral Load Report",
+  "flat_table_name": "ssemr_flat_encounter_viral_load",
+  "encounter_type_uuid": "79c1f50f-f77d-42e2-ad2a-d29304dde2fe",
+  "concepts_locale": "en",
+  "table_columns": {
+    "serial_no": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "date_of_sample_collection": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "time": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "sample_type": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "date_of_treatment_initiation": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "date_of_initiation_of_current_regimen": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "current_regimen": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "is_patient_pregnant": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "is_patient_breastfeeding": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "arv_adherence": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "indication_for_vl_testing": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "last_routine_vl_date": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "last_routine_vl_value": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "last_repeat_vl_date": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "last_repeat_vl_value": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "last_suspected_tx_failure_date": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "last_suspected_tx_failure_repeat_vl_value": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "clinician_name": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "phone": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "request_date": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "vl_focal_person": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "phone_number": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "date_sample_received": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "date_results_dispatched": "13abe5c9-6de2-4970-b348-36d352ee8eeb",
+    "rejection": "13abe5c9-6de2-4970-b348-36d352ee8eeb"
+  }
+}
