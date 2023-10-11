@@ -1,3 +1,6 @@
+USE ssemr_analysis;
+
+~
 
         
     
@@ -1010,7 +1013,7 @@ SELECT location_id,
        address13,
        address14,
        address15
-FROM location;
+FROM openmrs.location;
 
 -- $END
 END //
@@ -1117,7 +1120,7 @@ SELECT patient_identifier_type_id,
        name,
        description,
        uuid
-FROM patient_identifier_type;
+FROM openmrs.patient_identifier_type;
 
 -- $END
 END //
@@ -1212,7 +1215,7 @@ INSERT INTO mamba_dim_concept_datatype (concept_datatype_id,
                                         datatype_name)
 SELECT dt.concept_datatype_id AS concept_datatype_id,
        dt.name                AS datatype_name
-FROM concept_datatype dt;
+FROM openmrs.concept_datatype dt;
 -- WHERE dt.retired = 0;
 
 -- $END
@@ -1259,8 +1262,9 @@ CREATE TABLE mamba_dim_concept
     id          INT          NOT NULL AUTO_INCREMENT,
     concept_id  INT          NOT NULL,
     uuid        CHAR(38)     NOT NULL,
-    datatype_id INT NOT NULL, -- make it a FK
+    datatype_id INT          NOT NULL, -- make it a FK
     datatype    VARCHAR(100) NULL,
+    retired     TINYINT(1)   NOT NULL,
 
     PRIMARY KEY (id)
 )
@@ -1274,6 +1278,9 @@ CREATE INDEX mamba_dim_concept_uuid_index
 
 CREATE INDEX mamba_dim_concept_datatype_id_index
     ON mamba_dim_concept (datatype_id);
+
+CREATE INDEX mamba_dim_concept_retired_index
+    ON mamba_dim_concept (retired);
 
 -- $END
 END //
@@ -1295,11 +1302,13 @@ BEGIN
 
 INSERT INTO mamba_dim_concept (uuid,
                                concept_id,
-                               datatype_id)
+                               datatype_id,
+                               retired)
 SELECT c.uuid        AS uuid,
        c.concept_id  AS concept_id,
-       c.datatype_id AS datatype_id
-FROM concept c;
+       c.datatype_id AS datatype_id,
+       c.retired
+FROM openmrs.concept c;
 -- WHERE c.retired = 0;
 
 -- $END
@@ -1410,7 +1419,7 @@ SELECT ca.concept_answer_id AS concept_answer_id,
        ca.concept_id        AS concept_id,
        ca.answer_concept    AS answer_concept,
        ca.answer_drug       AS answer_drug
-FROM concept_answer ca;
+FROM openmrs.concept_answer ca;
 
 -- $END
 END //
@@ -1510,7 +1519,7 @@ SELECT cn.concept_name_id,
        cn.locale,
        cn.locale_preferred,
        cn.concept_name_type
-FROM concept_name cn
+FROM openmrs.concept_name cn
  WHERE cn.locale = 'en'
   AND cn.locale_preferred = 1
     AND cn.voided = 0;
@@ -1556,9 +1565,10 @@ BEGIN
 
 CREATE TABLE mamba_dim_encounter_type
 (
-    id                INT      NOT NULL AUTO_INCREMENT,
-    encounter_type_id INT      NOT NULL,
-    uuid              CHAR(38) NOT NULL,
+    id                INT         NOT NULL AUTO_INCREMENT,
+    encounter_type_id INT         NOT NULL,
+    uuid              CHAR(38)    NOT NULL,
+    name              VARCHAR(50) NOT NULL,
 
     PRIMARY KEY (id)
 )
@@ -1589,10 +1599,12 @@ BEGIN
 -- $BEGIN
 
 INSERT INTO mamba_dim_encounter_type (encounter_type_id,
-                                      uuid)
+                                      uuid,
+                                      name)
 SELECT et.encounter_type_id,
-       et.uuid
-FROM encounter_type et;
+       et.uuid,
+       et.name
+FROM openmrs.encounter_type et;
 -- WHERE et.retired = 0;
 
 -- $END
@@ -1708,7 +1720,7 @@ SELECT e.encounter_id,
        e.date_created,
        e.voided,
        e.visit_id
-FROM encounter e
+FROM openmrs.encounter e
          INNER JOIN mamba_dim_encounter_type et
                     ON e.encounter_type = et.encounter_type_id
 WHERE et.uuid
@@ -1986,8 +1998,21 @@ DELIMITER ;
 -- ----------------------  sp_mamba_dim_report_definition_insert  ----------------------------
 -- ---------------------------------------------------------------------------------------------
 
+DELIMITER //
 
+DROP PROCEDURE IF EXISTS sp_mamba_dim_report_definition_insert;
 
+CREATE PROCEDURE sp_mamba_dim_report_definition_insert()
+BEGIN
+-- $BEGIN
+SET @report_definition_json = '{
+  "report_definitions": []
+}';
+CALL sp_mamba_extract_report_definition_metadata(@report_definition_json, 'mamba_dim_report_definition');
+-- $END
+END //
+
+DELIMITER ;
 
         
 -- ---------------------------------------------------------------------------------------------
@@ -2044,7 +2069,7 @@ BEGIN
 CREATE TABLE mamba_dim_person
 (
     id                  INT          NOT NULL AUTO_INCREMENT,
-    person_id           INT          NOT NULL UNIQUE,
+    person_id           INT          NOT NULL,
     birthdate           DATE         NULL,
     birthdate_estimated TINYINT(1)   NOT NULL,
     age                 INT          NULL,
@@ -2114,10 +2139,11 @@ SELECT psn.person_id,
                                                                     AS person_name_long,
        psn.uuid,
        psn.voided
-FROM person psn
+FROM openmrs.person psn
          INNER JOIN mamba_dim_person_name pn
                     on psn.person_id = pn.person_id
-where pn.preferred = 1;
+WHERE pn.preferred = 1
+  AND pn.voided = 0;
 
 -- $END
 END //
@@ -2244,7 +2270,7 @@ SELECT patient_id,
        date_created,
        uuid,
        voided
-FROM patient_identifier;
+FROM openmrs.patient_identifier;
 
 -- $END
 END //
@@ -2317,6 +2343,7 @@ CREATE TABLE mamba_dim_person_name
     family_name2       VARCHAR(50) NULL,
     family_name_suffix VARCHAR(50) NULL,
     degree             VARCHAR(50) NULL,
+    voided             TINYINT(1)  NOT NULL,
 
     PRIMARY KEY (id)
 )
@@ -2327,6 +2354,12 @@ CREATE INDEX mamba_dim_person_name_person_name_id_index
 
 CREATE INDEX mamba_dim_person_name_person_id_index
     ON mamba_dim_person_name (person_id);
+
+CREATE INDEX mamba_dim_person_name_voided_index
+    ON mamba_dim_person_name (voided);
+
+CREATE INDEX mamba_dim_person_name_preferred_index
+    ON mamba_dim_person_name (preferred);
 
 -- $END
 END //
@@ -2345,7 +2378,6 @@ DROP PROCEDURE IF EXISTS sp_mamba_dim_person_name_insert;
 CREATE PROCEDURE sp_mamba_dim_person_name_insert()
 BEGIN
 -- $BEGIN
-
 INSERT INTO mamba_dim_person_name(person_name_id,
                                   person_id,
                                   preferred,
@@ -2356,7 +2388,8 @@ INSERT INTO mamba_dim_person_name(person_name_id,
                                   family_name,
                                   family_name2,
                                   family_name_suffix,
-                                  degree)
+                                  degree,
+                                  voided)
 SELECT pn.person_name_id,
        pn.person_id,
        pn.preferred,
@@ -2367,12 +2400,9 @@ SELECT pn.person_name_id,
        pn.family_name,
        pn.family_name2,
        pn.family_name_suffix,
-       pn.degree
-FROM person_name pn;
-
-CREATE INDEX mamba_dim_person_name_preferred_index
-    ON mamba_dim_person_name (preferred);
-
+       pn.degree,
+       pn.voided
+FROM openmrs.person_name pn;
 -- $END
 END //
 
@@ -2495,7 +2525,7 @@ SELECT person_address_id,
        country,
        latitude,
        longitude
-FROM person_address;
+FROM openmrs.person_address;
 
 -- $END
 END //
@@ -2609,7 +2639,7 @@ BEGIN
             retire_reason,
             uuid,
             email
-        FROM users c;
+        FROM openmrs.users c;
 -- $END
 END //
 
@@ -2746,7 +2776,7 @@ SELECT
     date_voided,
     void_reason,
     uuid
-FROM relationship;
+FROM openmrs.relationship;
 
 -- $END
 END //
@@ -2787,6 +2817,177 @@ BEGIN
 CALL sp_mamba_dim_relationship_create();
 CALL sp_mamba_dim_relationship_insert();
 CALL sp_mamba_dim_relationship_update();
+
+-- $END
+END //
+
+DELIMITER ;
+
+        
+-- ---------------------------------------------------------------------------------------------
+-- ----------------------  sp_mamba_dim_orders_create  ----------------------------
+-- ---------------------------------------------------------------------------------------------
+
+DELIMITER //
+
+DROP PROCEDURE IF EXISTS sp_mamba_dim_orders_create;
+
+CREATE PROCEDURE sp_mamba_dim_orders_create()
+BEGIN
+-- $BEGIN
+
+CREATE TABLE mamba_dim_orders
+(
+    id                     INT           NOT NULL AUTO_INCREMENT,
+    order_id               INT           NOT NULL,
+    uuid                   CHAR(38)      NOT NULL,
+    order_type_id          INT           NOT NULL,
+    concept_id             INT           NOT NULL,
+    patient_id             INT           NOT NULL,
+    encounter_id           INT           NOT NULL, -- links with encounter table
+    accession_number       VARCHAR(255)  NULL,
+    order_number           VARCHAR(50)   NOT NULL,
+    orderer                INT           NOT NULL,
+    instructions           TEXT          NULL,
+    date_activated         DATETIME      NULL,
+    auto_expire_date       DATETIME      NULL,
+    date_stopped           DATETIME      NULL,
+    order_reason           INT           NULL,
+    creator                INT           NOT NULL,
+    date_created           DATETIME      NOT NULL,
+    voided                 TINYINT(1)    NOT NULL,
+    voided_by              INT           NULL,
+    date_voided            DATETIME      NULL,
+    void_reason            VARCHAR(255)  NULL,
+    order_reason_non_coded VARCHAR(255)  NULL,
+    urgency                VARCHAR(50)   NOT NULL,
+    previous_order_id      INT           NULL,
+    order_action           VARCHAR(50)   NOT NULL,
+    comment_to_fulfiller   VARCHAR(1024) NULL,
+    care_setting           INT           NOT NULL,
+    scheduled_date         DATETIME      NULL,
+    order_group_id         INT           NULL,
+    sort_weight            DOUBLE        NULL,
+    fulfiller_comment      VARCHAR(1024) NULL,
+    fulfiller_status       VARCHAR(50)   NULL,
+
+    PRIMARY KEY (id)
+)
+    CHARSET = UTF8MB4;
+
+CREATE INDEX mamba_dim_orders_order_id_index
+    ON mamba_dim_orders (order_id);
+
+CREATE INDEX mamba_dim_orders_uuid_index
+    ON mamba_dim_orders (uuid);
+
+CREATE INDEX mamba_dim_orders_order_type_id_index
+    ON mamba_dim_orders (order_type_id);
+
+CREATE INDEX mamba_dim_orders_concept_id_index
+    ON mamba_dim_orders (concept_id);
+
+CREATE INDEX mamba_dim_orders_patient_id_index
+    ON mamba_dim_orders (patient_id);
+
+CREATE INDEX mamba_dim_orders_encounter_id_index
+    ON mamba_dim_orders (encounter_id);
+
+-- $END
+END //
+
+DELIMITER ;
+
+        
+-- ---------------------------------------------------------------------------------------------
+-- ----------------------  sp_mamba_dim_orders_insert  ----------------------------
+-- ---------------------------------------------------------------------------------------------
+
+DELIMITER //
+
+DROP PROCEDURE IF EXISTS sp_mamba_dim_orders_insert;
+
+CREATE PROCEDURE sp_mamba_dim_orders_insert()
+BEGIN
+-- $BEGIN
+
+INSERT INTO mamba_dim_orders (order_id, uuid, order_type_id, concept_id, patient_id, encounter_id, accession_number,
+                              order_number, orderer, instructions, date_activated, auto_expire_date, date_stopped,
+                              order_reason, creator, date_created, voided, voided_by, date_voided, void_reason,
+                              order_reason_non_coded, urgency, previous_order_id, order_action, comment_to_fulfiller,
+                              care_setting, scheduled_date, order_group_id, sort_weight, fulfiller_comment,
+                              fulfiller_status)
+SELECT order_id,
+       uuid,
+       order_type_id,
+       concept_id,
+       patient_id,
+       encounter_id,
+       accession_number,
+       order_number,
+       orderer,
+       instructions,
+       date_activated,
+       auto_expire_date,
+       date_stopped,
+       order_reason,
+       creator,
+       date_created,
+       voided,
+       voided_by,
+       date_voided,
+       void_reason,
+       order_reason_non_coded,
+       urgency,
+       previous_order_id,
+       order_action,
+       comment_to_fulfiller,
+       care_setting,
+       scheduled_date,
+       order_group_id,
+       sort_weight,
+       fulfiller_comment,
+       fulfiller_status
+FROM openmrs.orders;
+
+-- $END
+END //
+
+DELIMITER ;
+
+        
+-- ---------------------------------------------------------------------------------------------
+-- ----------------------  sp_mamba_dim_orders_update  ----------------------------
+-- ---------------------------------------------------------------------------------------------
+
+DELIMITER //
+
+DROP PROCEDURE IF EXISTS sp_mamba_dim_orders_update;
+
+CREATE PROCEDURE sp_mamba_dim_orders_update()
+BEGIN
+-- $BEGIN
+-- $END
+END //
+
+DELIMITER ;
+
+        
+-- ---------------------------------------------------------------------------------------------
+-- ----------------------  sp_mamba_dim_orders  ----------------------------
+-- ---------------------------------------------------------------------------------------------
+
+DELIMITER //
+
+DROP PROCEDURE IF EXISTS sp_mamba_dim_orders;
+
+CREATE PROCEDURE sp_mamba_dim_orders()
+BEGIN
+-- $BEGIN
+
+CALL sp_mamba_dim_orders_create();
+CALL sp_mamba_dim_orders_insert();
+CALL sp_mamba_dim_orders_update();
 
 -- $END
 END //
@@ -3034,7 +3235,7 @@ SELECT o.encounter_id,
        o.status,
        o.voided,
        ROW_NUMBER() OVER (PARTITION BY person_id,encounter_id,concept_id)
-FROM obs o
+FROM openmrs.obs o
          INNER JOIN mamba_dim_encounter e
                     ON o.encounter_id = e.encounter_id
 WHERE o.encounter_id IS NOT NULL;
@@ -3148,6 +3349,8 @@ CALL sp_mamba_dim_user;
 CALL sp_mamba_dim_relationship;
 
 CALL sp_mamba_dim_patient_identifier;
+
+CALL sp_mamba_dim_orders;
 
 CALL sp_mamba_dim_agegroup;
 
