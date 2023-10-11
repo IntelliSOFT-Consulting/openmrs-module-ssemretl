@@ -124,7 +124,7 @@
 									<artifactItem>
 										<groupId>org.openmrs.module</groupId>
 										<artifactId>ohrimamba-core-api</artifactId>
-										<version>2.0.1-SNAPSHOT</version>
+										<version>${mambaETLversion}</version>
 										<type>jar</type>
 										<outputDirectory>${project.build.directory}/mamba-etl</outputDirectory>
 										<includes>_core/**</includes>
@@ -220,9 +220,14 @@
 									<!-- the Engine compiler script -->
 									<argument>compile.sh</argument>
 									<!-- Database the created stored procedures will run on -->
-									<argument>-d openmrs_working</argument>
+									<argument>-d openmrs</argument>
 									<!-- File with a list of all files with stored procedures -->
 									<!-- Remove this argument after automating core to auto-read this -->
+									<!-- The source database (OpenMRS database) -->
+
+									<!-- The target or analysis Database where the ETL data is stored -->
+									<argument>-a ssemr_analysis</argument>
+
 									<argument>-s ../../database/mysql/sp_makefile</argument>
 									<!-- a JSON configuration path/folder for all config files for db flattening -->
 									<!-- Folder containing configs folder, derived folders and any other ETL related folders -->
@@ -279,7 +284,8 @@
 		<legacyUIomodVersion>1.8.2</legacyUIomodVersion>
 		<junit5Version>5.7.2</junit5Version>
 		<junit4Version>4.13.1</junit4Version>
-    </properties>
+		<mambaETLversion>2.0.1-SNAPSHOT</mambaETLversion>
+	</properties>
 
 	<distributionManagement>
 		<repository>
