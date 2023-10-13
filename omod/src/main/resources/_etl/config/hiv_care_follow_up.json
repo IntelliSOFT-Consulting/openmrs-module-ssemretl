@@ -4,7 +4,7 @@
     "encounter_type_uuid": "e8481555-9dd1-4bb5-ba8c-cb721dafb166",
     "concepts_locale": "en",
     "table_columns": {
-        "death":"",
+        "death":"041daad2-198b-4223-aa46-6b23e85776a9",
         "date_of_death":"bced5365-80f5-4a27-a287-60296c4e4ff9",
         "lost_to_follow_up":"7ca4f879-4862-4cd5-84b3-e1ead8ff54ff",
         "lost_follow_up_last_visit_date":"773cd838-7b21-4f34-9b33-0a071140f817",
